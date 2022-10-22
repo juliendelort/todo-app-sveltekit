@@ -1,48 +1,64 @@
 <script>
 	import { flip } from 'svelte/animate';
+	import { createEventDispatcher } from 'svelte';
+
+	const dispatch = createEventDispatcher();
 
 	export let tasks;
 
-	function handleDragStart(e) {
-		console.log('dragStart', e.target);
-		// e.target.style.position = 'fixed';
+	let hovered = null;
+	let draggedIndex = null;
+
+	function handleDragStart(e, i) {
+		e.target.style.opacity = 0.5;
 		e.dataTransfer.dropEffect = 'move';
-		event.dataTransfer.effectAllowed = 'move';
+		draggedIndex = i;
 	}
 
-	function handleDragEnter(e) {
-		e.target.style.background = 'red';
-	}
-	function handleDragLeave(e) {
-		e.target.style.background = 'none';
+	function handleDrop(e, i) {
+		console.log('old', draggedIndex, 'new', i);
+		dispatch('dropped', {
+			oldIndex: draggedIndex,
+			newIndex: i
+		});
 	}
 
-	function handleDrop(e) {
-		e.dataTransfer.dropEffect = 'move';
+	function handleDragEnd(e, i) {
+		e.target.style.opacity = 1;
+		hovered = null;
+		draggedIndex = null;
+	}
+
+	function handleDragEnterLast(e) {
+		hovered = -1;
 	}
 </script>
 
 {#each tasks as task, i (task.id)}
-	<div class="task-item" animate:flip draggable="true" on:dragstart={handleDragStart}>
-		<div
-			class="drop-zone"
-			on:dragenter={handleDragEnter}
-			on:dragleave={handleDragLeave}
-			on:drop={handleDrop}
-			on:dragover={(e) => e.preventDefault()}
-		/>
+	<div
+		class="task-item"
+		animate:flip
+		draggable="true"
+		on:dragstart={(e) => handleDragStart(e, i)}
+		on:drop={(e) => handleDrop(e, i)}
+		on:dragover={(e) => e.preventDefault()}
+		on:dragenter={() => (hovered = i)}
+		on:dragend={(e) => handleDragEnd(e, i)}
+		class:hovered={hovered === i}
+	>
+		<div class="drop-zone drop-zone-start" />
 		<input
 			type="checkbox"
 			aria-label={`${task.completed ? 'Unmark' : 'mark'} task as completed`}
 			checked={task.completed ? true : undefined}
 		/>
 		<span class="task-text" class:completed={task.completed}>{task.text}</span>
-
 		{#if i === tasks.length - 1}
 			<div
 				class="drop-zone drop-zone-end"
-				on:dragenter={handleDragEnter}
-				on:dragleave={handleDragLeave}
+				class:hovered={hovered === -1}
+				on:dragover={handleDragEnterLast}
+				on:drop={(e) => handleDrop(e, tasks.length)}
 			/>
 		{/if}
 	</div>
@@ -104,8 +120,14 @@
 		left: 0;
 	}
 
+	.task-item.hovered > .drop-zone.drop-zone-start {
+		background: var(--bright-blue);
+	}
 	.drop-zone.drop-zone-end {
 		top: initial;
 		bottom: 0;
+	}
+	.drop-zone.drop-zone-end.hovered {
+		background: var(--bright-blue);
 	}
 </style>
