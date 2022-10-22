@@ -1,53 +1,112 @@
 <script>
-	import Header from './Header.svelte';
 	import './styles.css';
+	import moon from '$lib/images/icon-moon.svg';
+	import sun from '$lib/images/icon-sun.svg';
+
+	let darkMode = false;
+
+	function handleThemeClick() {
+		darkMode = !darkMode;
+	}
+
+	$: {
+		if (typeof window !== 'undefined') {
+			if (darkMode) {
+				document?.body.classList.add('dark');
+			} else {
+				document?.body.classList.remove('dark');
+			}
+		}
+	}
 </script>
 
 <div class="app">
-	<Header />
-
+	<div class="hero" />
 	<main>
+		<div class="header">
+			<h1>TODO</h1>
+			<button aria-label={`Set ${darkMode ? 'light' : 'dark'} mode`} on:click={handleThemeClick}
+				><img src={darkMode ? sun : moon} alt="Toggle dark mode" /></button
+			>
+		</div>
+		<div class="add_todo_input">
+			<div class="circle" />
+			<input type="text" placeholder="Create a new todo..." />
+		</div>
 		<slot />
 	</main>
-
-	<footer>
-		<p>visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to learn SvelteKit</p>
-	</footer>
 </div>
 
 <style>
-	.app {
+	.hero {
+		background-image: var(--hero-img);
+		background-size: cover;
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 300px;
+		z-index: -1;
+	}
+
+	.header {
 		display: flex;
-		flex-direction: column;
-		min-height: 100vh;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 35px;
+		width: 100%;
+	}
+
+	.header > button {
+		background: transparent;
+		border: none;
+	}
+
+	.header > button > img {
+		width: 20px;
+		height: 20px;
 	}
 
 	main {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		padding: 1rem;
+		max-width: 600px;
 		width: 100%;
-		max-width: 64rem;
-		margin: 0 auto;
+		margin: 80px auto 0;
+		padding: 0 40px;
 		box-sizing: border-box;
 	}
 
-	footer {
+	h1 {
+		color: white;
+		letter-spacing: 10px;
+	}
+
+	.add_todo_input {
+		background-color: var(--input-bg);
+		height: 50px;
+		border-radius: 5px;
 		display: flex;
-		flex-direction: column;
-		justify-content: center;
 		align-items: center;
-		padding: 12px;
+		padding-left: 20px;
+		gap: 10px;
+		overflow: hidden;
 	}
 
-	footer a {
-		font-weight: bold;
+	.circle {
+		width: 20px;
+		height: 20px;
+		border: 1px solid var(--border-color);
+		border-radius: 50%;
 	}
 
-	@media (min-width: 480px) {
-		footer {
-			padding: 12px 0;
-		}
+	input {
+		border: none;
+		font-family: inherit;
+		font-size: 16px;
+		height: 100%;
+		box-sizing: border-box;
+		flex: 1;
+		padding-left: 10px;
+		background: transparent;
+		color: var(--input-txt-color);
 	}
 </style>
