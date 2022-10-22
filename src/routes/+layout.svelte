@@ -33,7 +33,9 @@
 			<div class="circle" />
 			<input type="text" placeholder="Create a new todo..." />
 		</div>
-		<slot />
+		<div class="tasks-container">
+			<slot />
+		</div>
 	</main>
 </div>
 
@@ -81,7 +83,7 @@
 	}
 
 	.add_todo_input {
-		background-color: var(--input-bg);
+		background-color: var(--task-bg);
 		height: 50px;
 		border-radius: 5px;
 		display: flex;
@@ -89,6 +91,7 @@
 		padding-left: 20px;
 		gap: 10px;
 		overflow: hidden;
+		margin-bottom: 30px;
 	}
 
 	.circle {
@@ -96,6 +99,7 @@
 		height: 20px;
 		border: 1px solid var(--border-color);
 		border-radius: 50%;
+		box-sizing: border-box;
 	}
 
 	input {
@@ -107,6 +111,12 @@
 		flex: 1;
 		padding-left: 10px;
 		background: transparent;
-		color: var(--input-txt-color);
+		color: var(--task-txt-color);
+	}
+
+	.tasks-container {
+		border-radius: 5px;
+		overflow: hidden;
+		box-shadow: 1px 1px 20px 9px rgb(0 0 0 / 20%);
 	}
 </style>
