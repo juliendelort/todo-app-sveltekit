@@ -1,23 +1,10 @@
 <script>
 	import TasksList from './TasksList.svelte';
+	export let data;
 
-	let tasks = [
-		{
-			id: 1,
-			text: 'Feed the cat'
-		},
-		{
-			id: 2,
-			text: 'Walk the dog',
-			completed: true
-		},
-		{
-			id: 3,
-			text: 'Go to the gym'
-		}
-	];
+	$: tasks = data.tasks;
 
-	function handleDropped({ detail: { oldIndex, newIndex } }) {
+	function handleDropped({ oldIndex, newIndex }) {
 		if (oldIndex !== newIndex) {
 			const beforeId = tasks[newIndex]?.id;
 			const task = tasks[oldIndex];
@@ -39,7 +26,7 @@
 	<meta name="description" content="Todo app" />
 </svelte:head>
 
-<TasksList {tasks} on:dropped={handleDropped} />
+<TasksList {tasks} onReordered={handleDropped} />
 
 <style>
 </style>

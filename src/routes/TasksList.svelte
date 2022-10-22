@@ -1,8 +1,8 @@
 <script>
 	import { flip } from 'svelte/animate';
-	import { createEventDispatcher } from 'svelte';
+	import { slide } from 'svelte/transition';
 
-	const dispatch = createEventDispatcher();
+	export let onReordered;
 
 	export let tasks;
 
@@ -16,8 +16,7 @@
 	}
 
 	function handleDrop(e, i) {
-		console.log('old', draggedIndex, 'new', i);
-		dispatch('dropped', {
+		onReordered({
 			oldIndex: draggedIndex,
 			newIndex: i
 		});
@@ -37,7 +36,7 @@
 {#each tasks as task, i (task.id)}
 	<div
 		class="task-item"
-		animate:flip
+		animate:flip={{ duration: 200 }}
 		draggable="true"
 		on:dragstart={(e) => handleDragStart(e, i)}
 		on:drop={(e) => handleDrop(e, i)}
@@ -45,12 +44,13 @@
 		on:dragenter={() => (hovered = i)}
 		on:dragend={(e) => handleDragEnd(e, i)}
 		class:hovered={hovered === i}
+		transition:slide
 	>
 		<div class="drop-zone drop-zone-start" />
 		<input
 			type="checkbox"
 			aria-label={`${task.completed ? 'Unmark' : 'mark'} task as completed`}
-			checked={task.completed ? true : undefined}
+			bind:checked={task.completed}
 		/>
 		<span class="task-text" class:completed={task.completed}>{task.text}</span>
 		{#if i === tasks.length - 1}

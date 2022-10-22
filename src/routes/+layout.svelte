@@ -2,12 +2,23 @@
 	import './styles.css';
 	import moon from '$lib/images/icon-moon.svg';
 	import sun from '$lib/images/icon-sun.svg';
+	import { enhance } from '$app/forms';
 
 	let darkMode = false;
-
 	function handleThemeClick() {
 		darkMode = !darkMode;
 	}
+
+	// function handleSubmit() {
+	// 	if (newTodoText) {
+	// 		// tasks.push({
+	// 		// 	id: tasks.length + 1,
+	// 		// 	text: newTodoText,
+	// 		// 	completed: false
+	// 		// });
+	// 		newTodoText = '';
+	// 	}
+	// }
 
 	$: {
 		if (typeof window !== 'undefined') {
@@ -31,7 +42,9 @@
 		</div>
 		<div class="add_todo_input">
 			<div class="circle" />
-			<input type="text" placeholder="Create a new todo..." />
+			<form method="post" use:enhance>
+				<input type="text" name="text" placeholder="Create a new todo..." />
+			</form>
 		</div>
 		<div class="tasks-container">
 			<slot />
@@ -94,6 +107,10 @@
 		margin-bottom: 30px;
 	}
 
+	.add_todo_input:focus-within {
+		outline: 2px solid var(--bright-blue);
+	}
+
 	.circle {
 		width: 20px;
 		height: 20px;
@@ -108,10 +125,16 @@
 		font-size: 16px;
 		height: 100%;
 		box-sizing: border-box;
-		flex: 1;
+		width: 100%;
 		padding-left: 10px;
 		background: transparent;
 		color: var(--task-txt-color);
+		outline: none;
+	}
+
+	form {
+		height: 100%;
+		flex: 1;
 	}
 
 	.tasks-container {
