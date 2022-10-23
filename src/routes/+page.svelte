@@ -4,8 +4,13 @@
 </script>
 
 <svelte:head>
-	<title>All tasks</title>
+	<title>{data.title}</title>
 	<meta name="description" content="Todo app" />
 </svelte:head>
 
-<TasksList tasks={data.tasks} />
+<TasksList
+	tasks={data.tasks}
+	countAll={data.countAll}
+	countActive={data.countActive}
+	countCompleted={data.countCompleted}
+/>

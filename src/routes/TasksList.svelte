@@ -3,57 +3,69 @@
 	import { slide } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { moveTask } from '../utils';
+	import Links from './Links.svelte';
 
+	/**
+	 * The list of tasks to display
+	 * @type {Object[]}
+	 */
 	export let tasks;
 
+	/**
+	 * The number of tasks in the list
+	 * @type {number}
+	 */
+	export let countAll;
+	/**
+	 * The number of completed tasks
+	 * @type {number}
+	 */
+	export let countCompleted;
+	/**
+	 * The number of active tasks
+	 * @type {number}
+	 */
+	export let countActive;
+
+	/**
+	 * When dragging a task, id of task being hovered
+	 * @type {number|null}
+	 */
 	let hoveredId = null;
+
+	/**
+	 * When dragging a task, id of task being dragged
+	 * @type {number|null}
+	 */
 	let draggedId = null;
 
-	$: console.log(tasks);
-
 	function handleDragStart(e, id) {
-		e.target.style.opacity = 0.5;
 		e.dataTransfer.dropEffect = 'move';
 		draggedId = id;
 	}
 
-	function handleDrop(e, idToInsertBefore) {
+	async function handleDrop(e, idToInsertBefore) {
 		e.stopPropagation(); // Otherwise when dropping on .drop-zone-end, handleDrop is called twice
 
-		const newTasks = tasks.filter((task) => task.id !== draggedId);
-		if (idToInsertBefore === null) {
-			// insert at the end
-			newTasks.push(tasks.find((task) => task.id === draggedId));
-		} else {
-			const indexToInsertBefore = newTasks.findIndex((task) => task.id === idToInsertBefore);
-			newTasks.splice(
-				indexToInsertBefore,
-				0,
-				tasks.find((task) => task.id === draggedId)
-			);
-		}
+		// Optimistic UI: move the task in the UI first
+		tasks = moveTask(tasks, draggedId, idToInsertBefore, true);
 
-		tasks = newTasks;
-		// const oldIndex = draggedId;
-		// const newIndex = i;
+		// Send the request
+		const data = new FormData();
+		data.append('idToMove', draggedId);
+		data.append('idToInsertBefore', idToInsertBefore);
 
-		// if (oldIndex !== newIndex) {
-		// 	const beforeId = tasks[newIndex]?.id;
-		// 	const task = tasks[oldIndex];
-		// 	tasks.splice(oldIndex, 1);
-		// 	if (beforeId) {
-		// 		const beforeIndex = tasks.findIndex((t) => t.id === beforeId);
+		await fetch('/?/moveTask', {
+			method: 'POST',
+			body: data
+		});
 
-		// 		tasks = [...tasks.slice(0, beforeIndex), task, ...tasks.slice(beforeIndex)];
-		// 	} else {
-		// 		// before id is null because newIndex is after the array
-		// 		tasks = [...tasks, task];
-		// 	}
-		// }
+		// re-run all `load` functions, following the successful update
+		await invalidateAll();
 	}
 
 	function handleDragEnd(e) {
-		e.target.style.opacity = 1;
 		hoveredId = null;
 		draggedId = null;
 	}
@@ -85,12 +97,20 @@
 			}
 		];
 
+		// Also update the counters
+		countAll++;
+		countActive++;
+
 		return async ({ result, update }) => {
 			if (result.type !== 'success') {
 				// Error: remove the pending task we just added
 				tasks = tasks.filter((task) => task.id !== id);
+				// ...And restore the counters
+				countAll--;
+				countActive++;
 			}
 
+			// This will trigger a re-run of all `load` functions and replace our optimistic UI local changes with the real data
 			update();
 		};
 	}
@@ -108,8 +128,29 @@
 			return task;
 		});
 
+		// Update the counters
+		if (!!data.get('completed')) {
+			countCompleted++;
+			countActive--;
+		} else {
+			countCompleted--;
+			countActive++;
+		}
+
 		return async () => {
 			// We're not using update here because we don't want the form to be reset
+			await invalidateAll();
+		};
+	}
+
+	function handleEnhanceClearCompleted({ form, data, action, cancel }) {
+		// Optimistic UI: remove all completed tasks
+		tasks = tasks.filter((task) => !task.completed);
+
+		// Update the counters
+		countCompleted = 0;
+
+		return async () => {
 			await invalidateAll();
 		};
 	}
@@ -134,6 +175,7 @@
 			on:dragend={(e) => handleDragEnd(e)}
 			class:hovered={hoveredId === task.id}
 			class:pending={task.pending}
+			class:dragging={draggedId === task.id}
 			transition:slide
 		>
 			<div class="drop-zone drop-zone-start" />
@@ -158,6 +200,19 @@
 			{/if}
 		</div>
 	{/each}
+	<div class="bottom-bar">
+		<div>{countActive} items left</div>
+		<div class="links">
+			<Links {countAll} {countActive} {countCompleted} />
+		</div>
+		<form method="POST" action="/?/clear" use:enhance={handleEnhanceClearCompleted}>
+			<button>Clear Completed </button>
+		</form>
+	</div>
+</div>
+
+<div class="mobile-links">
+	<Links {countAll} {countActive} {countCompleted} />
 </div>
 
 <style>
@@ -226,6 +281,10 @@
 		pointer-events: none; /* Prevent checking/unchecking while pending */
 	}
 
+	.dragging {
+		opacity: 0.5;
+	}
+
 	input[type='checkbox'] {
 		width: 20px;
 		height: 20px;
@@ -277,5 +336,49 @@
 	}
 	.drop-zone.drop-zone-end.hovered {
 		background: var(--bright-blue);
+	}
+
+	.bottom-bar {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		background: var(--task-bg);
+		padding: 15px;
+		font-size: 14px;
+		color: var(--task-txt-color);
+	}
+
+	.bottom-bar button {
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		color: var(--task-txt-color);
+		font-family: inherit;
+	}
+
+	.links {
+		display: flex;
+		gap: 15px;
+	}
+
+	.mobile-links {
+		display: none;
+	}
+
+	@media screen and (max-width: 768px) {
+		.links {
+			display: none;
+		}
+
+		.mobile-links {
+			display: flex;
+			background-color: var(--task-bg);
+			padding: 15px;
+			margin-top: 20px;
+			border-radius: 5px;
+			font-size: 14px;
+			gap: 20px;
+			justify-content: center;
+		}
 	}
 </style>

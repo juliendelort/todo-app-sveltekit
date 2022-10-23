@@ -10,6 +10,7 @@
 	}
 
 	$: {
+		// When darkmode changes, toggle the class on the body
 		if (typeof window !== 'undefined') {
 			if (darkMode) {
 				document?.body.classList.add('dark');
@@ -35,6 +36,7 @@
 			>
 		</div>
 		<slot />
+		<p>Drag and drop to reorder list</p>
 	</main>
 </div>
 
@@ -82,12 +84,19 @@
 		max-width: 600px;
 		width: 100%;
 		margin: 80px auto 0;
-		padding: 0 40px;
+		padding: 0 20px;
 		box-sizing: border-box;
 	}
 
 	h1 {
 		color: white;
 		letter-spacing: 10px;
+	}
+
+	p {
+		margin-top: 50px;
+		text-align: center;
+		color: var(--actions-color);
+		font-size: 12px;
 	}
 </style>
