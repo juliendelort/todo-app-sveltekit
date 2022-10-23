@@ -96,6 +96,7 @@ export const actions = {
         }
     },
     clear: async () => {
-        return tasks.filter((task) => !task.completed);
+        tasks = tasks.filter((task) => !task.completed);
+        return tasks;
     }
 };

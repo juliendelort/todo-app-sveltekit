@@ -148,6 +148,7 @@
 		tasks = tasks.filter((task) => !task.completed);
 
 		// Update the counters
+		countAll -= countCompleted;
 		countCompleted = 0;
 
 		return async () => {
