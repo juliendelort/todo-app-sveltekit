@@ -36,7 +36,7 @@
 			>
 		</div>
 		<slot />
-		<p>Drag and drop to reorder list</p>
+		<p>Drag and drop to reorder list (Desktop only)</p>
 	</main>
 </div>
 
