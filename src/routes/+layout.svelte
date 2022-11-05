@@ -4,13 +4,7 @@
 	import sun from '$lib/images/icon-sun.svg';
 	import { page } from '$app/stores';
 	import Links from './Links.svelte';
-	import {
-		addTodo,
-		clearCompleted,
-		listenCountActive,
-		listenCountAll,
-		listenCountCompleted
-	} from '../firebase';
+	import { addTodo, clearCompleted, listenCounts } from '../firebase';
 
 	let darkMode = false;
 	let data = $page.data;
@@ -48,14 +42,8 @@
 		await clearCompleted();
 	}
 
-	listenCountAll((newData) => {
-		data = { ...data, countAll: newData };
-	});
-	listenCountActive((newData) => {
-		data = { ...data, countActive: newData };
-	});
-	listenCountCompleted((newData) => {
-		data = { ...data, countCompleted: newData };
+	listenCounts((newData) => {
+		data = { ...data, ...newData };
 	});
 </script>
 

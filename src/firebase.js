@@ -2,10 +2,12 @@
 import { initializeApp } from "firebase/app";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
-import { addDoc, deleteDoc, getFirestore, query, setDoc, where, writeBatch } from "firebase/firestore";
+import { addDoc, deleteDoc, getFirestore, increment, query, setDoc, where, writeBatch } from "firebase/firestore";
 import { collection, getDocs } from "firebase/firestore";
 import { doc, onSnapshot } from "firebase/firestore";
 import { onDestroy, onMount } from 'svelte';
+import { runTransaction } from "firebase/firestore";
+
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -53,14 +55,19 @@ export const listenTodos = async (callback, active) => {
     });
 };
 
-export const listenCountAll = async (callback) => {
+export const listenCounts = async (callback) => {
     let unsub;
     onMount(() => {
         unsub = onSnapshot(
-            collection(db, "todos"),
+            doc(db, "counts", "counts"),
             { includeMetadataChanges: true },
             (querySnapshot) => {
-                callback(querySnapshot.size);
+                const data = querySnapshot.data();
+                callback({
+                    countAll: data.all,
+                    countActive: data.all - data.completed,
+                    countCompleted: data.completed
+                });
             });
     });
 
@@ -69,48 +76,30 @@ export const listenCountAll = async (callback) => {
     });
 };
 
-export const listenCountCompleted = async (callback) => {
-    let unsub;
-    onMount(() => {
-        unsub = onSnapshot(
-            query(collection(db, "todos"), where('completed', '==', true)),
-            { includeMetadataChanges: true },
-            (querySnapshot) => {
-                callback(querySnapshot.size);
-            });
-    });
 
-    onDestroy(() => {
-        unsub?.();
-    });
-};
-
-export const listenCountActive = async (callback) => {
-    let unsub;
-    onMount(() => {
-        unsub = onSnapshot(
-            query(collection(db, "todos"), where('completed', '==', false)),
-            { includeMetadataChanges: true },
-            (querySnapshot) => {
-                callback(querySnapshot.size);
-            });
-    });
-
-    onDestroy(() => {
-        unsub?.();
-    });
-};
 
 export const addTodo = async (todo) => {
-    const docRef = await addDoc(collection(db, "todos"), todo);
-    return {
-        id: docRef.id,
-        ...todo
-    };
+    await runTransaction(db, async (transaction) => {
+        const newTodoRef = doc(collection(db, "todos"));
+        await transaction.set(newTodoRef, todo);
+        await transaction.update(doc(db, 'counts', 'counts'), { all: increment(1) });
+    });
 };
 
 export const editTodo = async (todo) => {
-    await setDoc(doc(db, "todos", todo.id), todo);
+    await runTransaction(db, async (transaction) => {
+        const todoDoc = await transaction.get(doc(db, 'todos', todo.id));
+        if (todoDoc.data().completed !== todo.completed) {
+            // We're changing the completed status
+            if (todo.completed) {
+                await transaction.update(doc(db, 'counts', 'counts'), { completed: increment(1) });
+            } else {
+                await transaction.update(doc(db, 'counts', 'counts'), { completed: increment(-1) });
+            }
+        }
+        await transaction.update(doc(db, 'todos', todo.id), todo);
+    });
+
 };
 
 export const clearCompleted = async () => {
@@ -119,10 +108,11 @@ export const clearCompleted = async () => {
     const batch = writeBatch(db);
 
     for (const todo of completed) {
-        // Delete the city 'LA'
         const docRef = doc(db, "todos", todo.id);
         batch.delete(docRef);
     }
+
+    batch.set(doc(db, 'counts', 'counts'), { completed: increment(-1 * completed.length), all: increment(-1 * completed.length) });
 
     // Commit the batch
     await batch.commit();
