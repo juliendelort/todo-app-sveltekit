@@ -24,6 +24,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@fontsource/josefin-sans": "^4.5.11"
+		"@fontsource/josefin-sans": "^4.5.11",
+		"firebase": "^9.13.0"
 	}
 }
