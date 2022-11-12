@@ -18,11 +18,9 @@
 	export let countActive;
 </script>
 
-<a href="/" class:active={!$page.url.searchParams.get('status')}>All ({countAll})</a>
-<a href="/?status=active" class:active={$page.url.searchParams.get('status') === 'active'}
-	>Active ({countActive})</a
->
-<a href="/?status=completed" class:active={$page.url.searchParams.get('status') === 'completed'}
+<a href="/" class:active={$page.params.slug === 'all'}>All ({countAll})</a>
+<a href="/active" class:active={$page.params.slug === 'active'}>Active ({countActive})</a>
+<a href="/completed" class:active={$page.params.slug === 'completed'}
 	>Completed ({countCompleted})</a
 >
 
