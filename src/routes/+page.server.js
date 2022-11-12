@@ -33,7 +33,7 @@ export const actions = {
     moveTask: async ({ request }) => {
         try {
             const formData = await request.formData();
-            return await moveTask(formData.get('idToMove'), formData.get('idToInsertAfter') ?? null);
+            return await moveTask(formData.get('idToMove'), formData.get('idToInsertBefore') ?? null);
         } catch (e) {
             return error(500, e.message);
         }

@@ -28,13 +28,13 @@
 		draggedId = id;
 	}
 
-	async function handleDrop(e, idToInsertAfter) {
+	async function handleDrop(e, idToInsertBefore) {
 		e.stopPropagation(); // Otherwise when dropping on .drop-zone-end, handleDrop is called twice
 
 		// Send the request
 		const data = new FormData();
 		data.append('idToMove', draggedId);
-		data.append('idToInsertAfter', idToInsertAfter);
+		data.append('idToInsertBefore', idToInsertBefore);
 
 		await fetch('/?/moveTask', {
 			method: 'POST',
@@ -50,7 +50,7 @@
 		draggedId = null;
 	}
 
-	function handleDragEnterFirst(e) {
+	function handleDragEnterLast(e) {
 		hoveredId = -1;
 	}
 
@@ -84,14 +84,7 @@
 		class:pending={editedIds.includes(task.id)}
 		class:dragging={draggedId === task.id}
 	>
-		{#if i === 0}
-			<div
-				class="drop-zone drop-zone-start"
-				class:hovered={hoveredId === -1}
-				on:dragover={handleDragEnterFirst}
-				on:drop={(e) => handleDrop(e, null)}
-			/>
-		{/if}
+		<div class="drop-zone drop-zone-start" />
 		<form method="POST" action="/?/setCompleted" use:enhance={handleEnhanceMarkCompleted}>
 			<input type="hidden" name="id" value={task.id} />
 			<input
@@ -104,7 +97,14 @@
 		</form>
 		<span class="task-text" class:completed={task.completed}>{task.text}</span>
 
-		<div class="drop-zone drop-zone-end" />
+		{#if i === tasks.length - 1}
+			<div
+				class="drop-zone drop-zone-end"
+				class:hovered={hoveredId === -1}
+				on:dragover={handleDragEnterLast}
+				on:drop={(e) => handleDrop(e, null)}
+			/>
+		{/if}
 	</div>
 {/each}
 
@@ -173,14 +173,14 @@
 		left: 0;
 	}
 
-	.task-item.hovered > .drop-zone.drop-zone-end {
+	.task-item.hovered > .drop-zone.drop-zone-start {
 		background: var(--bright-blue);
 	}
 	.drop-zone.drop-zone-end {
 		top: initial;
 		bottom: 0;
 	}
-	.drop-zone.drop-zone-start.hovered {
+	.drop-zone.drop-zone-end.hovered {
 		background: var(--bright-blue);
 	}
 </style>

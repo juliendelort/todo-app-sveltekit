@@ -1,7 +1,7 @@
 
-const BASE_URL = 'https://todos-3ac4.restdb.io/rest/tasks';
-const API_KEY = '636f9f38c890f30a8fd1f323';
+import { API_KEY } from '$env/static/private';
 
+const BASE_URL = 'https://todos-3ac4.restdb.io/rest/tasks';
 
 export async function getAllTasks() {
     return getTasks();
@@ -34,9 +34,8 @@ export async function setCompleted(id, completed) {
 }
 
 export async function addTask(text) {
-    const tasks = await getAllTasks();
 
-    return await baseDBCall('', 'POST', { text, completed: false, after: tasks.length ? tasks.at(-1).id : null });
+    return await baseDBCall('', 'POST', { text, completed: false, updatedAt: Date.now() });
 }
 
 export async function clearCompleted() {
@@ -49,52 +48,43 @@ export async function clearCompleted() {
 export async function getTasks(query) {
     const tasks = await baseDBCall(query ? `?q=${query}` : '', 'GET');
 
-    if (tasks.length === 0) {
-        return [];
-    }
+    const tasksToSort = tasks.filter(t => !!t.beforeTaskId).sort((a, b) => a.updatedAt - b.updatedAt);
+    const result = tasks.filter(t => !t.beforeTaskId).sort((a, b) => a.updatedAt - b.updatedAt);
 
-    const tasksByAfter = tasks.reduce((acc, task) => {
-        acc[task.after] = task;
-        return acc;
-    }, {});
+    tasksToSort.forEach(t => {
+        console.log('task to sort', t, result);
+        const index = result.findIndex(r => r._id === t.beforeTaskId);
+        result.splice(index, 0, t);
+    });
 
-    if (!tasks.length) {
+    // if (!tasks.length) {
 
-    }
-    // Find first task
-    const firstTask = tasks.find(t => !t.after);
+    // }
+    // // Find first task
+    // const firstTask = tasks.find(t => !t.after);
 
-    const result = [firstTask];
-    let currentTask = firstTask;
+    // const result = [firstTask];
+    // let currentTask = firstTask;
 
-    console.log('***tasks', tasks);
+    // console.log('***tasks', tasks);
 
-    while (currentTask) {
-        const nextTask = tasksByAfter[currentTask._id];
-        if (nextTask) {
-            result.push(nextTask);
-        }
-        currentTask = nextTask;
-    }
+    // while (currentTask) {
+    //     const nextTask = tasksByAfter[currentTask._id];
+    //     if (nextTask) {
+    //         result.push(nextTask);
+    //     }
+    //     currentTask = nextTask;
+    // }
 
-    console.log('***result', result);
+    // console.log('***result', result);
 
     return result.map(t => ({ ...t, id: t._id }));
 }
-export async function moveTask(idToMove, idToInsertAfter) {
-    if (idToMove === idToInsertAfter) {
+export async function moveTask(idToMove, idToInsertBefore) {
+    if (idToMove === idToInsertBefore) {
         return;
     }
-    console.log('moveTask', idToMove, idToInsertAfter);
-    const tasks = await getTasks();
-
-    const taskThatUsedToBeAfter = tasks.find(t => t.after == idToInsertAfter);
-
-    console.log('***taskThatUsedToBeAfter', taskThatUsedToBeAfter);
-    await Promise.all([
-        updateTask(idToMove, { after: idToInsertAfter }),
-        updateTask(taskThatUsedToBeAfter.id, { after: idToMove }),
-    ]);
+    return await updateTask(idToMove, { beforeTaskId: idToInsertBefore });
 }
 
 export async function updateTask(id, data) {
